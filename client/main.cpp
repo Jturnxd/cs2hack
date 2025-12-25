@@ -61,10 +61,10 @@ static void run_info_esp() {
 			uintptr_t entity_list = cl.get_entity_list();
 			uintptr_t local_pawn = cl.get_local_pawn();
 
-			int local_team = ent.get_team(cl.get_local_pawn());
-			int local_health = ent.get_health(local_pawn);
-			int local_index;
-			Vector3 local_pos = ent.get_pos(local_pawn);
+                        int local_team = ent.get_team(cl.get_local_pawn());
+                        int local_health = ent.get_health(local_pawn);
+                        int local_index = -1;
+                        Vector3 local_pos = ent.get_pos(local_pawn);
 
 			for (int i = 1; i < 64; i++)
 			{	
@@ -144,20 +144,31 @@ static void run_aim_trigger() {
 		if (!local_health) 
 			continue;
 
-		int entity_id = ent.get_crosshair_id(local_pawn);
-		int local_team = ent.get_team(local_pawn);
+                int entity_id = ent.get_crosshair_id(local_pawn);
+                int local_team = ent.get_team(local_pawn);
 
 		short weapon_type = wpn.get_type(ent.get_weapon(local_pawn));
 		if (weapon_type < 1)
 			continue;
 
 		// triggerbot
-		if (cl.use_button_down() && entity_id) {
-			uintptr_t entity_list = cl.get_entity_list();
-			uintptr_t entity_pawn = ent.get_entity_pawn_from_id(entity_id, entity_list);
-			int entity_team = ent.get_team(entity_pawn);
-			int entity_health = ent.get_health(entity_pawn);
-			Vector3 entity_pos = ent.get_pos(entity_pawn);
+                if (cl.use_button_down() && entity_id) {
+                        uintptr_t entity_list = cl.get_entity_list();
+                        if (!entity_list)
+                                continue;
+
+                        uintptr_t entity_pawn = ent.get_entity_pawn_from_id(entity_id, entity_list);
+                        static int missing_crosshair_logs = 0;
+                        if (!entity_pawn) {
+                                if (missing_crosshair_logs < 5) {
+                                        std::cerr << "trigger: no pawn for crosshair id " << entity_id << std::endl;
+                                        missing_crosshair_logs++;
+                                }
+                                continue;
+                        }
+                        int entity_team = ent.get_team(entity_pawn);
+                        int entity_health = ent.get_health(entity_pawn);
+                        Vector3 entity_pos = ent.get_pos(entity_pawn);
 			if (entity_pos.IsZero())
 				continue;
 			
@@ -184,21 +195,21 @@ static void run_aim_trigger() {
 
 			view_matrix_t view_matrix = cl.get_view_matrix();
 
-			float closest_dist = 99999999999999.f;
-			Vector3 closest_point;
-			int local_index;
+                        float closest_dist = 99999999999999.f;
+                        Vector3 closest_point;
+                        int local_index = -1;
 
 			for (int i = 1; i <= 64; i++) {
 				uintptr_t entity_controller = ent.get_entity_controller(i, entity_list);
 				if (!entity_controller) 
 					continue;
-				uintptr_t entity_pawn = ent.get_entity_pawn(entity_controller, entity_list);
-				if (!entity_pawn)
-					continue;
-				if (entity_pawn == local_pawn)
-					local_index = i;
-				if (cfg.spotted && !(ent.is_spotted(entity_pawn) & (uint32_t(1) << (local_index - 1))))
-					continue;
+                                uintptr_t entity_pawn = ent.get_entity_pawn(entity_controller, entity_list);
+                                if (!entity_pawn)
+                                        continue;
+                                if (entity_pawn == local_pawn)
+                                        local_index = i;
+                                if (cfg.spotted && local_index > 0 && !(ent.is_spotted(entity_pawn) & (uint32_t(1) << (local_index - 1))))
+                                        continue;
 
 				int entity_health = ent.get_health(entity_pawn);
 				int entity_team = ent.get_team(entity_pawn);

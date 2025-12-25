@@ -80,14 +80,10 @@ uintptr_t entity::get_entity_pawn(uintptr_t controller, uintptr_t entity_list) {
 }
 
 uintptr_t entity::get_entity_pawn_from_id(int entity, uintptr_t entity_list) {
-	uintptr_t entry_ptr;
-	mem.read<uintptr_t>(entity_list + (0x8 * (entity >> 9) + 0x10), entry_ptr);
-	if (!entry_ptr) return 0;
-	uintptr_t controller_ptr;
-	mem.read<uintptr_t>(entry_ptr + 0x70 * (entity & 0x1FF), controller_ptr);
-	if (!controller_ptr) return 0;
+        uintptr_t controller_ptr = get_entity_controller(entity, entity_list);
+        if (!controller_ptr) return 0;
 
-	return controller_ptr;
+        return get_entity_pawn(controller_ptr, entity_list);
 }
 
 int entity::get_team(uintptr_t pawn) {
